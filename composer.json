@@ -1,6 +1,6 @@
 {
-  "name": "yireo/directory-data-cache",
-  "version": "1.0.0",
+  "name": "yireo/magento2-directory-data-cache",
+  "version": "0.0.1",
   "description": "N/A",
   "type": "magento2-module",
   "require": {
