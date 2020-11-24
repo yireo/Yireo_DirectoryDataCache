@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Cache/etc/cache.xsd">
+    <type name="directory_data" translate="label,description" instance="Yireo\DirectoryDataCache\Cache\Type">
+        <label>Directory Data</label>
+        <description>Caching the directory_data section of the JavaScript customerData object</description>
+    </type>
+</config>
