@@ -1,7 +1,10 @@
 {
     "module_name": "Yireo_DirectoryDataCache",
     "composer_name": "yireo/magento2-directory-data-cache",
-    "sequence": [],
+    "sequence": [
+        "Magento_Checkout",
+        "Magento_Store"
+    ],
     "phpcs_severity": "8",
     "phpstan_level": "5"
 }
