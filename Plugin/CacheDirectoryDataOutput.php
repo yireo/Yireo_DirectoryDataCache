@@ -3,44 +3,27 @@
 namespace Yireo\DirectoryDataCache\Plugin;
 
 use Closure;
+use InvalidArgumentException;
 use Magento\Checkout\CustomerData\DirectoryData;
+use Magento\Framework\App\Cache\StateInterface;
+use Magento\Framework\App\Cache\Type\Config as ConfigCacheType;
+use Magento\Framework\App\Cache\Type\Translate as TranslateCacheType;
+use Magento\Framework\Locale\ResolverInterface;
 use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Store\Model\StoreManagerInterface;
 use Yireo\DirectoryDataCache\Cache\Type as DirectoryDataCacheType;
-use Magento\Framework\App\Cache\Manager as CacheManager;
 
 class CacheDirectoryDataOutput
 {
     const CACHE_KEY = 'directory_data';
 
-    /**
-     * @var DirectoryDataCacheType
-     */
-    private $directoryDataCacheType;
-
-    /**
-     * @var SerializerInterface
-     */
-    private $serializer;
-
-    /**
-     * @var CacheManager
-     */
-    private $cacheManager;
-
-    /**
-     * CacheDirectoryDataOutput constructor.
-     * @param DirectoryDataCacheType $directoryDataCacheType
-     * @param SerializerInterface $serializer
-     * @param CacheManager $cacheManager
-     */
     public function __construct(
-        DirectoryDataCacheType $directoryDataCacheType,
-        SerializerInterface $serializer,
-        CacheManager $cacheManager
+        private DirectoryDataCacheType $directoryDataCacheType,
+        private SerializerInterface $serializer,
+        private StateInterface $cacheState,
+        private StoreManagerInterface $storeManager,
+        private ResolverInterface $localeResolver
     ) {
-        $this->directoryDataCacheType = $directoryDataCacheType;
-        $this->serializer = $serializer;
-        $this->cacheManager = $cacheManager;
     }
 
     /**
@@ -54,30 +37,40 @@ class CacheDirectoryDataOutput
             return $proceed();
         }
 
-        $data = (string)$this->directoryDataCacheType->load(self::CACHE_KEY);
+        $cacheKey = $this->getCacheKey();
+        $data = (string)$this->directoryDataCacheType->load($cacheKey);
         if ($data) {
-            $data = $this->serializer->unserialize($data);
+            try {
+                $data = $this->serializer->unserialize($data);
+            } catch (InvalidArgumentException $exception) {
+                $data = null;
+                $this->directoryDataCacheType->remove($cacheKey);
+            }
+
             if (is_array($data) && !empty($data)) {
                 return $data;
             }
         }
 
         $data = $proceed();
-        $this->directoryDataCacheType->save($this->serializer->serialize($data), self::CACHE_KEY);
+        $this->directoryDataCacheType->save(
+            (string)$this->serializer->serialize($data),
+            $cacheKey,
+            [ConfigCacheType::CACHE_TAG, TranslateCacheType::CACHE_TAG]
+        );
 
         return $data;
     }
 
-    /**
-     * @return bool
-     */
-    public function enabled(): bool
+    private function getCacheKey(): string
     {
-        $status = $this->cacheManager->getStatus();
-        if (!isset($status[self::CACHE_KEY])) {
-            return false;
-        }
+        return self::CACHE_KEY
+            . '_' . (int)$this->storeManager->getStore()->getId()
+            . '_' . $this->localeResolver->getLocale();
+    }
 
-        return (bool)$status[self::CACHE_KEY];
+    private function enabled(): bool
+    {
+        return $this->cacheState->isEnabled(DirectoryDataCacheType::TYPE_IDENTIFIER);
     }
 }
