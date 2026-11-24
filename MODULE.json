@@ -5,6 +5,6 @@
         "Magento_Checkout",
         "Magento_Store"
     ],
-    "phpcs_severity": "8",
+    "phpcs_severity": "7",
     "phpstan_level": "5"
 }
